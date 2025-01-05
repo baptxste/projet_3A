@@ -6,8 +6,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import numpy as np
-# from model import RNNEncoder, RNNDecoder
-from crash import EncoderRNN, DecoderRNN
+from model import RNNEncoder, RNNDecoder
+# from crash import EncoderRNN, DecoderRNN
 import torch.nn.functional as F
 
 batch_size = 4
@@ -62,8 +62,8 @@ emb_size = 16    # Taille des vecteurs d'embedding
 hidden_size = 32 # Taille des vecteurs d'état caché
 output_size = 10 # Nombre total de mots dans le vocabulaire de sortie
 
-encoder = EncoderRNN(input_size, emb_size, hidden_size)
-decoder = DecoderRNN(output_size, emb_size, hidden_size, output_len=seq_len)
+encoder = RNNEncoder(input_size, emb_size, hidden_size)
+decoder = RNNDecoder(output_size, emb_size, hidden_size, output_len=seq_len)
 
 
 criterion = nn.MSELoss()  
@@ -94,8 +94,8 @@ for epoch in range(epochs):
 
 
 print("Entraînement terminé")
-torch.save(encoder.state_dict(), "encoder_weights.pth")
-torch.save(decoder.state_dict(), "decoder_weights.pth")
+torch.save(encoder.state_dict(), "encoder_weights2.pth")
+torch.save(decoder.state_dict(), "decoder_weights2.pth")
 print("Poids des modèles sauvegardés.")
 
 # x_test = generate_data(1, seq_len).float()

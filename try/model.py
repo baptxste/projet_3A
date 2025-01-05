@@ -49,9 +49,9 @@ import torch.nn.functional as F
 
 
 
-class EncoderRNN(nn.Module):
+class RNNEncoder(nn.Module):
     def __init__(self, input_size, emb_size, hidden_size):
-        super(EncoderRNN, self).__init__()
+        super(RNNEncoder, self).__init__()
         self.hidden_size = hidden_size  
         self.embedding = nn.Embedding(input_size, emb_size)  
         self.rnn = nn.GRU(emb_size, hidden_size) 

@@ -2,20 +2,42 @@ import torch
 import torch.nn as nn
 
 
-class GRUModel(nn.Module):
-    def __init__(self, input_size, hidden_size, num_layers, output_size):
-        super(GRUModel, self).__init__()
+class GRUEncoder(nn.Module):
+    def __init__(self, input_size, emb_size, hidden_size):
+        super(GRUEncoder, self).__init__()
         self.hidden_size = hidden_size
-        self.num_layers = num_layers
-        
-        self.gru = nn.GRU(input_size, hidden_size, num_layers, batch_first=True)
-        self.fc = nn.Linear(hidden_size, output_size)
+        self.embedding = nn.Embedding(input_size, emb_size)
+        self.rnn = nn.GRU(emb_size, hidden_size, batch_first=True)
 
-    def forward(self, x):
-        h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(x.device)
-        out, _ = self.gru(x, h0)
+    def init_hidden(self, batch_size):
+        return torch.zeros(1, batch_size, self.hidden_size)
 
-        out = self.fc(out[:, -1, :]) # On récupère la dernière sortie tempo
-        return out
+    def forward(self, sequence):
+        batch_size = sequence.size(0)
+        hidden = self.init_hidden(batch_size)  # Initialisation des états cachés
+        embedded = self.embedding(sequence)  # (batch_size, seq_len, emb_size)
+        output, hidden = self.rnn(embedded, hidden)  # hidden contient le dernier état caché et output la suite de tous les états cachés
+        return hidden
 
+class GRUDecoder(nn.Module):
+    def __init__(self, emb_size, hidden_size, output_size):
+        super().__init__()
+        self.hidden_size = hidden_size
+        self.num_layers = 1
+        self.rnn = nn.GRU(hidden_size, hidden_size, batch_first=True)
+        self.out = nn.Linear(hidden_size, output_size)
+        self.softmax = nn.LogSoftmax(dim=-1)
 
+    def forward(self, hidden, output_len):
+        """
+        hidden : Dernier état caché de l'encodeur (1, batch_size, hidden_dim).
+        """
+        batch_size = hidden.size(1)
+        outputs = []
+        input_t = torch.zeros(batch_size, 1, self.hidden_size)  # Entrée initiale
+        for _ in range(output_len):
+            output, hidden = self.rnn(input_t, hidden)
+            output = self.out(output)  # (batch_size, 1, output_size)
+            output = self.softmax(output)
+            outputs.append(output.squeeze(1))  # (batch_size, output_size)
+        return torch.stack(outputs, dim=1)  # (batch_size, seq_len, output_size)
