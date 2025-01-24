@@ -9,6 +9,8 @@ Développer différents résaux et les tester.
 - [x] GRU
 -   Tree based  RNN ?
 - [x] TPDN
+  - [x] gauche droite
+  - [ ] droite gauche 
 
 Dataset : 
 - [x] séquence de chiffres générées cf articles TPDN
