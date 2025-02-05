@@ -7,10 +7,14 @@ Projet de fin d'année Centrale
 Développer différents résaux et les tester. 
 - [x] LSTM 
 - [x] GRU
+  - [x] gauche droite
+  - [x] droite gauche 
+  - [x] bi directionel  
 -   Tree based  RNN ?
 - [x] TPDN
   - [x] gauche droite
-  - [ ] droite gauche 
+  - [x] droite gauche 
+  - [x] Bi -directionel 
 
 Dataset : 
 - [x] séquence de chiffres générées cf articles TPDN

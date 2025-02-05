@@ -10,3 +10,7 @@ Nous observons que le tpdn réussi parfaitement à apprendre les états caché c
 ![Alt text](./partie1/resultats/hidden_state_tpdn_vs_gru-enc_30k_it.png "Optional Title")
 
 - Pour l'instant on utilise pas de dataset de train ou de test, on utilise juste une fonction qui génère de manière aléatoire peu être que faire des datasets serait intéressant. ( ca permettra au moins d'être reproducible)
+
+### **Correction**
+
+Après avoir changé le mode d'enregistrement des modèles ( torch.save au lieu de state_dict) nous réussissons à avoir des résultats satisfaisant en sortie du décodeur 
