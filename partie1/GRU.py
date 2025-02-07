@@ -95,7 +95,9 @@ class GRUDecoderDG(nn.Module):
 
 
 ############################################## bi dir ####################################
-    
+
+
+
 class BiGRUEncoder(nn.Module):
     def __init__(self, input_size, emb_size, hidden_size):
         super().__init__()
@@ -103,39 +105,37 @@ class BiGRUEncoder(nn.Module):
         self.embedding = nn.Embedding(input_size, emb_size)
         self.rnn = nn.GRU(emb_size, hidden_size, batch_first=True, bidirectional=True)
 
-    def init_hidden(self, batch_size):
-        return torch.zeros(2, batch_size, self.hidden_size)  # 2 car bidirectionnel
-
     def forward(self, sequence):
-        batch_size = sequence.size(0)
-        hidden = self.init_hidden(batch_size)
-        embedded = self.embedding(sequence)
-
-        output, hidden = self.rnn(embedded, hidden)
+        embedded = self.embedding(sequence)  # (batch_size, seq_len, emb_size)
+        output, hidden = self.rnn(embedded)  # hidden : (2, batch_size, hidden_size)
         
-        # on rassemble les états caché des deux sens
-        hidden = torch.cat((hidden[0], hidden[1]), dim=-1)  # (batch_size, 2*hidden_size)
+        hidden = torch.cat((hidden[0], hidden[1]), dim=-1)  # (batch_size, hidden_size * 2)
         
-        return hidden
+        return hidden.unsqueeze(0)  # (1, batch_size, hidden_size * 2)
 
-
-class BiGRUDecode(nn.Module):
+class BiGRUDecoder(nn.Module):
     def __init__(self, emb_size, hidden_size, output_size):
         super().__init__()
         self.hidden_size = hidden_size
-        self.rnn = nn.GRU(2 * hidden_size, hidden_size, batch_first=True)
+        
+        # on projette pour le rnnn 
+        self.hidden_proj = nn.Linear(hidden_size * 2, hidden_size)
+        
+        self.rnn = nn.GRU(hidden_size, hidden_size, batch_first=True)
         self.out = nn.Linear(hidden_size, output_size)
         self.softmax = nn.LogSoftmax(dim=-1)
 
     def forward(self, hidden, output_len):
-        batch_size = hidden.size(0)
-        outputs = []
-        input_t = torch.zeros(batch_size, 1, self.hidden_size)  # entrée initiale
-        
-        for _ in range(output_len):
-            output, hidden = self.rnn(input_t, hidden.unsqueeze(0))  # ajout de la dim couche
-            output = self.out(output)
-            output = self.softmax(output)
-            outputs.append(output.squeeze(1))  
+        batch_size = hidden.size(1)
+        hidden = self.hidden_proj(hidden)
 
-        return torch.stack(outputs, dim=1)
+        outputs = []
+        input_t = torch.zeros(batch_size, 1, self.hidden_size)  # (batch_size, 1, hidden_size)
+
+        for _ in range(output_len):
+            output, hidden = self.rnn(input_t, hidden)
+            output = self.out(output)  # (batch_size, 1, output_size)
+            output = self.softmax(output)
+            outputs.append(output.squeeze(1))  # (batch_size, output_size)
+        
+        return torch.stack(outputs, dim=1)  # (batch_size, seq_len, output_size)
