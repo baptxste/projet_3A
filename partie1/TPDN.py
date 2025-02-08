@@ -32,6 +32,6 @@ class TensorProductEncoder(nn.Module):
         tensor_product_flattened = tensor_product.view(tensor_product.size(0), tensor_product.size(1), -1)
         summed_output = tensor_product_flattened.sum(dim=1)  # (batch_size, filler_dim * role_dim)
 
-        output = self.last_layer(summed_output)  # (batch_size, hidden_size)
+        output = self.last_layer(summed_output)  # (batch_size, hidden_size) A ENLEVER
 
         return output
