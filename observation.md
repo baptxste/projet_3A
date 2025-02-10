@@ -14,3 +14,5 @@ Nous observons que le tpdn réussi parfaitement à apprendre les états caché c
 ### **Correction**
 
 Après avoir changé le mode d'enregistrement des modèles ( torch.save au lieu de state_dict) nous réussissons à avoir des résultats satisfaisant en sortie du décodeur 
+
+**ne plus utiliser** la fonction precision faite à la main if faut utiliser celle définit à partir de torchmetrics

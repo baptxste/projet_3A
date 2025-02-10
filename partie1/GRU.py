@@ -4,6 +4,48 @@ import torch.nn as nn
 
 
 ############################### modèle gauche droite ############################
+
+class GRUEncoderGD(nn.Module):
+    def __init__(self, input_size, emb_size, hidden_size, num_layers):
+        super().__init__()
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        self.embedding = nn.Embedding(input_size, emb_size)
+        self.rnn = nn.GRU(emb_size, hidden_size, batch_first=True, num_layers=self.num_layers)
+
+
+    def forward(self, sequence):
+        embedded = self.embedding(sequence)  # (batch_size, seq_len, emb_size)
+        output, hidden = self.rnn(embedded)  # hidden contient le dernier état caché et output la suite de tous les états cachés
+        # hidden : num_layers x batchsize x emb_size
+        return output, hidden
+
+class GRUDecoderGD(nn.Module):
+    def __init__(self, emb_size, hidden_size, output_size, num_layers):
+        super().__init__()
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        self.rnn = nn.GRU(hidden_size, hidden_size, batch_first=True, num_layers=self.num_layers)
+        self.out = nn.Linear(hidden_size, output_size)
+        self.softmax = nn.LogSoftmax(dim=-1)
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    def forward(self, hidden, output_len):
+        """
+        hidden : Dernier état caché de l'encodeur (num_layers, batch_size, hidden_dim).
+        """
+        batch_size = hidden.size(1)
+        outputs = []
+        input_t = torch.zeros(batch_size, 1, self.hidden_size).to(self.device)  # entrée initiale
+        for _ in range(output_len):
+            output, hidden = self.rnn(input_t, hidden)
+            output = self.out(output)  # (batch_size, 1, output_size)
+            output = self.softmax(output)
+            outputs.append(output.squeeze(1))  # (batch_size, output_size)
+        return torch.stack(outputs, dim=1)  # (batch_size, seq_len, output_size)
+
+# Ancien bug 
+""" 
 class GRUEncoderGD(nn.Module):
     def __init__(self, input_size, emb_size, hidden_size):
         super().__init__()
@@ -31,9 +73,9 @@ class GRUDecoderGD(nn.Module):
         self.softmax = nn.LogSoftmax(dim=-1)
 
     def forward(self, hidden, output_len):
-        """
+        '''
         hidden : Dernier état caché de l'encodeur (1, batch_size, hidden_dim).
-        """
+        '''
         batch_size = hidden.size(1)
         outputs = []
         input_t = torch.zeros(batch_size, 1, self.hidden_size)  # entrée initiale
@@ -43,9 +85,52 @@ class GRUDecoderGD(nn.Module):
             output = self.softmax(output)
             outputs.append(output.squeeze(1))  # (batch_size, output_size)
         return torch.stack(outputs, dim=1)  # (batch_size, seq_len, output_size)
-
+"""
 
 ############################# droite gauche ###############################
+
+class GRUEncoderDG(nn.Module):
+    def __init__(self, input_size, emb_size, hidden_size, num_layers):
+        super().__init__()
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        self.embedding = nn.Embedding(input_size, emb_size)
+        self.rnn = nn.GRU(emb_size, hidden_size, batch_first=True, num_layers=self.num_layers)
+
+
+    def forward(self, sequence):
+        embedded = self.embedding(sequence)  # (batch_size, seq_len, emb_size)
+        embedded = torch.flip(embedded, dims=[1])
+        output, hidden = self.rnn(embedded)  # hidden contient le dernier état caché et output la suite de tous les états cachés
+        # hidden : num_layers x batchsize x emb_size
+        return output, hidden
+
+class GRUDecoderDG(nn.Module):
+    def __init__(self, emb_size, hidden_size, output_size, num_layers):
+        super().__init__()
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        self.rnn = nn.GRU(hidden_size, hidden_size, batch_first=True, num_layers=self.num_layers)
+        self.out = nn.Linear(hidden_size, output_size)
+        self.softmax = nn.LogSoftmax(dim=-1)
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    def forward(self, hidden, output_len):
+        """
+        hidden : Dernier état caché de l'encodeur (num_layers, batch_size, hidden_dim).
+        """
+        batch_size = hidden.size(1)
+        outputs = []
+        input_t = torch.zeros(batch_size, 1, self.hidden_size).to(self.device)  # entrée initiale
+        for _ in range(output_len):
+            output, hidden = self.rnn(input_t, hidden)
+            output = self.out(output)  # (batch_size, 1, output_size)
+            output = self.softmax(output)
+            outputs.append(output.squeeze(1))  # (batch_size, output_size)
+        return torch.stack(outputs, dim=1)  # (batch_size, seq_len, output_size)
+
+# Ancien Bug 
+"""
 class GRUEncoderDG(nn.Module):
     # modèle droite gauche 
     def __init__(self, input_size, emb_size, hidden_size):
@@ -78,9 +163,9 @@ class GRUDecoderDG(nn.Module):
         self.softmax = nn.LogSoftmax(dim=-1)
 
     def forward(self, hidden, output_len):
-        """
+        '''
         hidden : Dernier état caché de l'encodeur (1, batch_size, hidden_dim).
-        """
+        '''
         batch_size = hidden.size(1)
         outputs = []
         input_t = torch.zeros(batch_size, 1, self.hidden_size)  
@@ -90,14 +175,14 @@ class GRUDecoderDG(nn.Module):
             output = self.softmax(output)
             outputs.append(output.squeeze(1))  # (batch_size, output_size)
         return torch.stack(outputs, dim=1)  # (batch_size, seq_len, output_size)
-
-
-
+"""
 
 ############################################## bi dir ####################################
 
 
 
+# A corriger comme le gauche droite 
+"""
 class BiGRUEncoder(nn.Module):
     def __init__(self, input_size, emb_size, hidden_size):
         super().__init__()
@@ -139,3 +224,4 @@ class BiGRUDecoder(nn.Module):
             outputs.append(output.squeeze(1))  # (batch_size, output_size)
         
         return torch.stack(outputs, dim=1)  # (batch_size, seq_len, output_size)
+"""
