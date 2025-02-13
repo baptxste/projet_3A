@@ -30,6 +30,7 @@ class TensorProductEncoder(nn.Module):
         final_states = torch.zeros(batch_size, seq_len, self.hidden_size)
 
 
+        tensor_product_flatteneds = []
 
         for i in range(fillers_embedded.size(1)):  # itérer sur chaque élément de la séquence
  
@@ -40,9 +41,13 @@ class TensorProductEncoder(nn.Module):
             
 
             tensor_product_flattened = tensor_product.view(tensor_product.size(0), -1)  # (batch_size, filler_dim * role_dim)
-            
+            tensor_product_flatteneds.append(tensor_product_flattened)
+            summed_tensor_product = torch.stack(tensor_product_flatteneds, dim=0).sum(dim=0)
+        
 
-            final_state = self.last_layer(tensor_product_flattened)  # (batch_size, hidden_size)
+            final_state = self.last_layer(summed_tensor_product)
+
+            # final_state = self.last_layer(tensor_product_flattened)  # (batch_size, hidden_size)
             
      
             final_states[:, i, :] = final_state
